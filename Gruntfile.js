@@ -3,6 +3,13 @@ module.exports = function(grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
     concat: {
+      options: {
+        separator: ';'
+      },
+      dist: {
+        src: ['public/**/*.js'],
+        dest: 'dist/<%= pkg.name %>.js'
+      }
     },
 
     mochaTest: {
@@ -16,28 +23,51 @@ module.exports = function(grunt) {
 
     nodemon: {
       dev: {
-        script: 'server.js'
+        script: './index.js'
       }
     },
 
     uglify: {
-    },
-
-    jshint: {
-      files: [
-        // Add filespec list here
-      ],
       options: {
-        force: 'true',
-        jshintrc: '.jshintrc',
-        ignores: [
-          'public/lib/**/*.js',
-          'public/dist/**/*.js'
-        ]
+        banner: '/*! <%= pkg.name %> <%= grunt.template.today("dd-mm-yyyy") %> */\n'
+      },
+      dist: {
+        files: {
+          'dist/<%= pkg.name %>.min.js': ['<%= concat.dist.dest %>']
+        }
       }
     },
 
+    jshint: {
+      files: ['*.js', '**/*.js', ],
+      options: {
+        jshintrc: '.jshintrc',
+        ignores: [
+          'dist/*.js',
+          'dist/*.min.js',
+          'public/lib/**/*.js',
+          'public/dist/**/*.js',
+          'node_modules/**/*.js'
+        ]
+      },
+      globals: {
+        Backbone: true,
+        jQuery: true,
+        _: true
+      }
+
+    },
+
     cssmin: {
+      target: {
+        files: [{
+          expand: true,
+          cwd: 'public/',
+          src: ['*.css', '!*.min.css'],
+          dest: 'dist',
+          ext: '.min.css'
+        }]
+      }
     },
 
     watch: {
@@ -93,12 +123,17 @@ module.exports = function(grunt) {
     'mochaTest'
   ]);
 
-  grunt.registerTask('build', [
+  grunt.registerTask('default', [
+    'jshint',
+    'concat',
+    'uglify',
+    'cssmin'
   ]);
 
   grunt.registerTask('upload', function(n) {
     if(grunt.option('prod')) {
       // add your production server task here
+
     } else {
       grunt.task.run([ 'server-dev' ]);
     }
